@@ -1,11 +1,26 @@
-import React, { useState, useEffect, useReducer, useRef } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import './App.css';
 
-import styled from 'styled-components';
-import {
-  Slider
-} from "@reach/slider";
-import "@reach/slider/styles.css";
+
+import AddTodo from './AddTodo';
+import Calender from './Calendar';
+import { perc2color, getSecondsFromDate } from './helpers'
+
+import styled, { keyframes } from 'styled-components';
+import { Slider } from "@reach/slider";
+
+const pulse = keyframes`
+  0% { text-shadow: none } 
+  50% { text-shadow: 0 0 5px cyan, 0 0 10px cyan, 0 0 15px cyan, 0 0 20px black, 0 0 30px black, 0 0 40px black; } 
+  100% { text-shadow: none; }
+`
+
+const PulseContents = styled.span`
+  animation: ${p => p.seconds || 0}s ${pulse} ease-out infinite;
+  ${p => !p.seconds ? 'animation: none;' : ''}
+  position: relative;
+  padding: 2px;
+`
 
 const TodoContainer = styled.div`
    display: grid;
@@ -24,9 +39,14 @@ const Quadrant = styled.div`
   box-sizing: border-box;
   padding: 5px;
   position: relative;
-  overflow: scroll hidden;
   max-width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
+`
+
+const TodoScrollBox = styled.div`
+  height: 100%;
+  overflow: hidden scroll;
 `
 
 const UrgentImportant = styled(Quadrant)`
@@ -47,6 +67,7 @@ const NonUrgentUnimportant = styled(Quadrant)`
 const FlexSpaceAround = styled.div`
   display: flex;
   justify-content: space-around;
+  position: relative;
 `
 
 const TitleBody = styled.div`
@@ -60,11 +81,8 @@ const TodoBody = styled.button`
   border: none;
   background-color: transparent;
   margin-bottom: 5px;
+  color: inherit;
 `
-
-const Title = ({ children }) => <FlexSpaceAround><TitleBody>{children}</TitleBody></FlexSpaceAround>
-const Todo = ({ children, onClick }) => <FlexSpaceAround><TodoBody onClick={onClick}>{children}</TodoBody></FlexSpaceAround>
-
 
 const AddTodoButton = styled.button`
   border-radius: 50%;
@@ -148,59 +166,20 @@ const todoReducer = (
   }
 };
 
-
-const AddTodoContainer = styled.div`
+export const FullScreenContainer = styled.div`
    height: 100vh;
    width: 100vw;
    background-color: ${p => perc2color(100 - p.scale)};
    padding: 1rem;
    box-sizing: border-box;
+
+   div[data-reach-slider] {
+     width: 100%;
+     box-sizing: border-box;
+   }
 `
 
-const TodoNameInput = styled.input`
-  border: solid 2px;
-  padding: 8px;
-  margin-bottom: 2rem;
-  width: 100%;
-  box-sizing: border-box;
-`
-
-const TodoDescTextArea = styled.textarea`
-  border: solid 2px;
-  padding: 3px; 
-  margin-bottom: 2rem;
-  width: 100%;
-  min-height: 10rem;
-  box-sizing: border-box;
-  max-height: 10rem;
-  max-width: 100%;
-  resize: none;
-`
-
-const FlexSpaceBetween = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  position: relative;
-  top: -1rem;
-`
-const HighLow = () => (
-  <FlexSpaceBetween>
-    <span>Very Low</span>  
-    <span>Very High</span>  
-  </FlexSpaceBetween>
-);
-
-const BottomOfScreenFlexBetween = styled(FlexSpaceBetween)`
-  position: absolute;
-  bottom: 10px;
-  top: auto;
-  margin: 0;
-  width: 92%;
-`
-
-const FinishTodo = styled.button`
+export const BigButton = styled.button`
   border-radius: 8px;
   border: solid 2px black;
   background-color: ${p => p.color || 'black'};
@@ -211,138 +190,8 @@ const FinishTodo = styled.button`
   padding: 2rem;
 `
 
-const CancelTodo = styled(FinishTodo)`
-  right: auto;
-  left: 10px;
-`
-
-const CompareTodo = styled.span`
-  font-size: 1.5rem;
-`
-
-const CompareHelperText = styled.span`
-  padding-top: 6px;
-  font-size: .75rem;
-`
-
-const clickAndWaitReducer = (shouldDelete = false, { type }) => {
-  switch(type) {
-    case 'RESET':
-      return false;
-    case 'CLICK':
-      return true; 
-    default:
-      return shouldDelete
-  }
-}
-
-const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }) => {
-  const [urgent, setUrgent] = useState(editingTodo ? editingTodo.urgent : 50);
-  const [important, setImportant] = useState(editingTodo ? editingTodo.important : 50);
-  const [name, setName] = useState(editingTodo ? editingTodo.name : '');
-  const [desc, setDesc] = useState(editingTodo ? editingTodo.desc : '');
-
-  const [shouldCheckForDelete, dispatchDelete] = useReducer(clickAndWaitReducer);
-
-  useEffect(() => {
-    let mounted = true;
-
-    if (shouldCheckForDelete) {
-      setTimeout(() => {
-        if (mounted) dispatchDelete({ type: 'RESET' })
-      }, 2000)
-    }
-
-    return () => mounted = false;
-  }, [shouldCheckForDelete])
-
-  const nameInput = useRef(null);
-
-  const todo = {
-    name, desc, urgent, important
-  }
-
-  useEffect(() => {
-    nameInput.current.focus();
-  }, [])
-
-  const sortedTodosByImportant = todos.sort((a, b) => b.important - a.important)
-  const nextHighestImportant = sortedTodosByImportant.reduce((returningTodo, currentTodo) => currentTodo.important > important ? currentTodo : returningTodo, null)
-
-  const nextHighestImportantIndex = nextHighestImportant && sortedTodosByImportant.findIndex(todo => todo.name === nextHighestImportant.name)
-  const nextLowestImportant = typeof nextHighestImportantIndex === 'number' ? sortedTodosByImportant[nextHighestImportantIndex + 1] : sortedTodosByImportant[0];
-
-  const sortedTodosByUrgent = todos.sort((a, b) => b.urgent - a.urgent)
-  const nextHighestUrgent = sortedTodosByUrgent.reduce((returningTodo, currentTodo) => currentTodo.urgent > urgent ? currentTodo : returningTodo, null)
-
-  const nextHighestUrgentIndex = nextHighestUrgent && sortedTodosByUrgent.findIndex(todo => todo.name === nextHighestUrgent.name)
-  const nextLowestUrgent = typeof nextHighestUrgentIndex === 'number' ? sortedTodosByUrgent[nextHighestUrgentIndex + 1] : sortedTodosByUrgent[0];
-
-  let importantHelperText;
-  if (nextHighestImportant && nextLowestImportant) importantHelperText = '<- between these two ->';
-  else if (nextHighestImportant) importantHelperText = 'not as important as';
-  else if (nextLowestImportant) importantHelperText = 'is next next lowest in importance';
-
-  let urgentHelperText;
-  if (nextHighestUrgent && nextLowestUrgent) urgentHelperText = '<- between these two ->';
-  else if (nextHighestUrgent) urgentHelperText = 'not as urgent as';
-  else if (nextLowestUrgent) urgentHelperText = 'is next next lowest in urgency';
-
-  return (
-    <AddTodoContainer scale={important}>
-      <div>
-        Task name:
-      </div>
-      <div>
-        <TodoNameInput ref={nameInput} value={name} onChange={e => setName(e.target.value)} />
-      </div>
-      <div>
-        Task description:
-      </div>
-      <div>
-        <TodoDescTextArea value={desc} onChange={e => setDesc(e.target.value)} />
-      </div>
-      How important is this task?
-      <Slider min={0} max={100} step={1} value={important} onChange={setImportant} />
-      <HighLow />
-      <FlexSpaceBetween>
-        <CompareTodo>{nextLowestImportant && nextLowestImportant.name}</CompareTodo>
-        <CompareHelperText>{importantHelperText}</CompareHelperText>
-        <CompareTodo>{nextHighestImportant && nextHighestImportant.name}</CompareTodo>
-      </FlexSpaceBetween>
-      How urgent is this task?
-      <Slider min={0} max={100} step={1} value={urgent} onChange={setUrgent} />
-      <HighLow />
-      <FlexSpaceBetween>
-        <CompareTodo>{nextLowestUrgent && nextLowestUrgent.name}</CompareTodo>
-        <CompareHelperText>{urgentHelperText}</CompareHelperText>
-        <CompareTodo>{nextHighestUrgent && nextHighestUrgent.name}</CompareTodo>
-      </FlexSpaceBetween>
-      <BottomOfScreenFlexBetween>
-        <CancelTodo onClick={goBack}>Back</CancelTodo>
-        {editingTodo && (
-          <FinishTodo
-            color={shouldCheckForDelete ? 'red' : null}
-            onClick={() => {
-              if(shouldCheckForDelete) {
-                deleteTodo()
-              } else {
-                dispatchDelete({ type: 'CLICK' })
-              }
-            }}
-          >
-            Delete
-          </FinishTodo>
-        )}
-        {editingTodo ? (
-          <FinishTodo onClick={() => updateTodo(todo)}>Update</FinishTodo>
-        ) : (
-          <FinishTodo onClick={() => addTodo(todo)}>Add todo</FinishTodo>
-        )}
-      </BottomOfScreenFlexBetween>
-    </AddTodoContainer>
-  )
-}
+const Title = ({ children }) => <FlexSpaceAround><TitleBody>{children}</TitleBody></FlexSpaceAround>
+const Todo = ({ children, onClick }) => <FlexSpaceAround><TodoBody onClick={onClick}>{children}</TodoBody></FlexSpaceAround>
 
 const App = () => {
   const [{ appState, todos, editingTodo }, dispatch] = useReducer(todoReducer, { appState: IDLE, todos: localStorage.getItem('todos') ? JSON.parse(localStorage.getItem('todos')) : [] });
@@ -366,12 +215,16 @@ const App = () => {
     localStorage.setItem('scales', JSON.stringify({importantThreshold, urgentThreshold}));
   }, [importantThreshold, urgentThreshold])
 
+  useEffect(() => {
+    document.body.style.backgroundColor = appState === SETTINGS_PAGE ? 'cyan' : 'yellow';
+  }, [appState])  
+
   // const clearTodos = () => dispatch({ type: SLICE, startIndex: 0, endIndex: 0 })
   const goBack = () => dispatch({ type: GO_TO_IDLE })
 
   if (appState === SETTINGS_PAGE) {
     return (
-      <AddTodoContainer>
+      <FullScreenContainer>
         <p>
           What is your importance threshold?
         </p>
@@ -386,8 +239,8 @@ const App = () => {
           (Tasks above this mark will be deemed urgent)
         </p>
         <Slider min={0} max={100} step={1} value={urgentThreshold} onChange={setUrgentThreshold} />
-        <CancelTodo onClick={() => dispatch({type: GO_TO_IDLE})}>Go Back</CancelTodo>
-      </AddTodoContainer>
+        <BigButton onClick={() => dispatch({type: GO_TO_IDLE})}>Go Back</BigButton>
+      </FullScreenContainer>
     )
   }
 
@@ -427,51 +280,62 @@ const App = () => {
     <TodoContainer>
       <UrgentImportant>
         <Title>Urgent Important</Title>
-        {urgentImportantTodos.map((todo, i) => (
-          <Todo 
-            key={i}
-            onClick={() => dispatch({ type: EDIT_TODO, index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name)})}
-          >
-            {todo.name}
-          </Todo>
-          )
-        )}
+        <TodoScrollBox>
+          {urgentImportantTodos.map((todo, i) => (
+            <Todo 
+              key={i}
+              onClick={() => dispatch({ type: EDIT_TODO, index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name)})}
+            >
+              <PulseContents seconds={() => getSecondsFromDate(todo.date)}>{todo.name}</PulseContents>
+              {todo.date && <Calender white />}
+            </Todo>
+          ))}
+        </TodoScrollBox>
       </UrgentImportant>
       <NonUrgentImportant>
         <Title>Non-Urgent Important</Title>
-        {nonurgentImportantTodos.map((todo, i) => (
-          <Todo 
-            key={i}
-            onClick={() => dispatch({ type: EDIT_TODO, index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name)})}
-          >
-            {todo.name}
-          </Todo>
-          )
-        )}      
+        <TodoScrollBox>
+          {nonurgentImportantTodos.map((todo, i) => (
+            <Todo 
+              key={i}
+              onClick={() => dispatch({ type: EDIT_TODO, index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name)})}
+            >
+              <PulseContents seconds={() => getSecondsFromDate(todo.date)}>{todo.name}</PulseContents>
+              {todo.date && <Calender />}
+            </Todo>
+            )
+          )}      
+        </TodoScrollBox>
       </NonUrgentImportant>
       <UrgentUnimportant>
         <Title>Urgent Un-Important</Title>
-        {urgentUnimportantTodos.map((todo, i) => (
-          <Todo 
-            key={i}
-            onClick={() => dispatch({ type: EDIT_TODO, index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name)})}
-          >
-            {todo.name}
-          </Todo>
-          )
-        )}      
+        <TodoScrollBox>
+          {urgentUnimportantTodos.map((todo, i) => (
+            <Todo 
+              key={i}
+              onClick={() => dispatch({ type: EDIT_TODO, index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name)})}
+            >
+              <PulseContents seconds={() => getSecondsFromDate(todo.date)}>{todo.name}</PulseContents>
+              {todo.date && <Calender />}
+            </Todo>
+            )
+          )}      
+        </TodoScrollBox>
       </UrgentUnimportant>
       <NonUrgentUnimportant>
         <Title>Non-Urgent Un-Important</Title>
-        {nonurgentUnimportantTodos.map((todo, i) => (
-          <Todo 
-            key={i}
-            onClick={() => dispatch({ type: EDIT_TODO, index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name)})}
-          >
-            {todo.name}
-          </Todo>
-          )
-        )}      
+        <TodoScrollBox>
+          {nonurgentUnimportantTodos.map((todo, i) => (
+            <Todo 
+              key={i}
+              onClick={() => dispatch({ type: EDIT_TODO, index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name)})}
+            >
+              <PulseContents seconds={() => getSecondsFromDate(todo.date)}>{todo.name}</PulseContents>
+              {todo.date && <Calender white />}
+            </Todo>
+            )
+          )}
+        </TodoScrollBox>
       </NonUrgentUnimportant>
       <SettingsButton onClick={() => dispatch({ type: GO_TO_SETTINGS })}>...</SettingsButton>
       <AddTodoButton onClick={() => dispatch({ type: CLICK_ADD_BUTTON })}>+</AddTodoButton>
@@ -481,17 +345,3 @@ const App = () => {
 }
 
 export default App;
-
-const perc2color = perc => {
-  let r, g, b = 0;
-  if(perc < 50) {
-    r = 255;
-    g = Math.round(5.1 * perc);
-  }
-  else {
-    g = 255;
-    r = Math.round(510 - 5.10 * perc);
-  }
-  let h = r * 0x10000 + g * 0x100 + b * 0x1;
-  return '#' + ('000000' + h.toString(16)).slice(-6);
-}

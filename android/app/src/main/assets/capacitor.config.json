@@ -1,0 +1,8 @@
+{
+  "appId": "com.example.app",
+  "appName": "quadrants",
+  "bundledWebRuntime": false,
+  "npmClient": "yarn",
+  "webDir": "build",
+  "cordova": {}
+}
