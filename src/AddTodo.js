@@ -4,23 +4,23 @@ import { FullScreenContainer, BigButton } from './App';
 import { perc2color } from './helpers';
 
 import styled from 'styled-components';
-import { Slider } from "@reach/slider";
-import DatePicker from "react-datepicker"; 
-import "react-datepicker/dist/react-datepicker.css";
+import { Slider } from '@reach/slider';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const TodoNameInput = styled.input`
   border: solid 2px;
   padding: 8px;
-  margin: .5rem 0;
+  margin: 0.5rem 0;
   width: 100%;
   box-sizing: border-box;
   border-radius: 5px;
-`
+`;
 
 const TodoDescTextArea = styled.textarea`
   border: solid 2px;
-  padding: 3px; 
-  margin: .5rem 0 2rem;
+  padding: 3px;
+  margin: 0.5rem 0 2rem;
   width: 100%;
   min-height: 6rem;
   box-sizing: border-box;
@@ -28,7 +28,7 @@ const TodoDescTextArea = styled.textarea`
   max-width: 100%;
   resize: none;
   border-radius: 5px;
-`
+`;
 
 const FlexSpaceBetween = styled.div`
   width: 100%;
@@ -37,17 +37,17 @@ const FlexSpaceBetween = styled.div`
   margin-bottom: 1rem;
   position: relative;
   top: -1rem;
-`
+`;
 
 const SmallHelperText = styled.span`
   padding-top: 6px;
-  font-size: .75rem;
-`
+  font-size: 0.75rem;
+`;
 
 const HighLow = () => (
   <FlexSpaceBetween>
-    <SmallHelperText>Very Low</SmallHelperText>  
-    <SmallHelperText>Very High</SmallHelperText>  
+    <SmallHelperText>Very Low</SmallHelperText>
+    <SmallHelperText>Very High</SmallHelperText>
   </FlexSpaceBetween>
 );
 
@@ -57,15 +57,15 @@ const BottomOfScreenFlexBetween = styled(FlexSpaceBetween)`
   top: auto;
   margin: 0;
   width: 92%;
-`
+`;
 
 const CompareTodo = styled.span`
   font-size: 1.5rem;
-`
+`;
 
 const ButtonSpacer = styled.div`
   height: 5rem;
-`
+`;
 
 const DatePickerWrapper = styled.div`
   margin-bottom: 1rem;
@@ -74,31 +74,31 @@ const DatePickerWrapper = styled.div`
     z-index: 5;
   }
 
-  input[type=text] {
+  input[type='text'] {
     margin-left: 1rem;
     background-color: white;
     padding: 5px;
     width: 5rem;
   }
-  input[type=checkbox] {
+  input[type='checkbox'] {
     margin: 0 1rem;
   }
 
   .react-datepicker-popper {
     left: -17rem;
   }
-`
+`;
 
 const clickAndWaitReducer = (shouldDelete = false, { type }) => {
-  switch(type) {
+  switch (type) {
     case 'RESET':
       return false;
     case 'CLICK':
-      return true; 
+      return true;
     default:
-      return shouldDelete
+      return shouldDelete;
   }
-}
+};
 
 const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }) => {
   const [urgent, setUrgent] = useState(editingTodo ? editingTodo.urgent : 50);
@@ -107,48 +107,71 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
   const [desc, setDesc] = useState(editingTodo ? editingTodo.desc : '');
 
   // checking for `&& editingTodo.date` because some todos might not have dates
-  const [date, setDate] = useState(editingTodo && editingTodo.date ? new Date(editingTodo.date) : new Date());
+  const [date, setDate] = useState(
+    editingTodo && editingTodo.date ? new Date(editingTodo.date) : new Date(),
+  );
   const [useDate, setUseDate] = useState(editingTodo && editingTodo.date ? true : false);
 
   const [shouldCheckForDelete, dispatchDelete] = useReducer(clickAndWaitReducer);
 
   useEffect(() => {
     document.body.style.backgroundColor = perc2color(100 - important);
-  }, [important])
+  }, [important]);
 
   useEffect(() => {
     let mounted = true;
 
     if (shouldCheckForDelete) {
       setTimeout(() => {
-        if (mounted) dispatchDelete({ type: 'RESET' })
-      }, 2000)
+        if (mounted) dispatchDelete({ type: 'RESET' });
+      }, 2000);
     }
 
-    return () => mounted = false;
-  }, [shouldCheckForDelete])
+    return () => (mounted = false);
+  }, [shouldCheckForDelete]);
 
   const nameInput = useRef(null);
 
   const todo = {
-    name, desc, urgent, important, date: useDate ? date : undefined
-  }
+    name,
+    desc,
+    urgent,
+    important,
+    date: useDate ? date : undefined,
+  };
 
   useEffect(() => {
     if (!editingTodo) nameInput.current.focus();
-  }, [])
+  }, []);
 
-  const sortedTodosByImportant = todos.sort((a, b) => b.important - a.important)
-  const nextHighestImportant = sortedTodosByImportant.reduce((returningTodo, currentTodo) => currentTodo.important > important ? currentTodo : returningTodo, null)
+  const sortedTodosByImportant = todos.sort((a, b) => b.important - a.important);
+  const nextHighestImportant = sortedTodosByImportant.reduce(
+    (returningTodo, currentTodo) =>
+      currentTodo.important > important ? currentTodo : returningTodo,
+    null,
+  );
 
-  const nextHighestImportantIndex = nextHighestImportant && sortedTodosByImportant.findIndex(todo => todo.name === nextHighestImportant.name)
-  const nextLowestImportant = typeof nextHighestImportantIndex === 'number' ? sortedTodosByImportant[nextHighestImportantIndex + 1] : sortedTodosByImportant[0];
+  const nextHighestImportantIndex =
+    nextHighestImportant &&
+    sortedTodosByImportant.findIndex(todo => todo.name === nextHighestImportant.name);
+  const nextLowestImportant =
+    typeof nextHighestImportantIndex === 'number'
+      ? sortedTodosByImportant[nextHighestImportantIndex + 1]
+      : sortedTodosByImportant[0];
 
-  const sortedTodosByUrgent = todos.sort((a, b) => b.urgent - a.urgent)
-  const nextHighestUrgent = sortedTodosByUrgent.reduce((returningTodo, currentTodo) => currentTodo.urgent > urgent ? currentTodo : returningTodo, null)
+  const sortedTodosByUrgent = todos.sort((a, b) => b.urgent - a.urgent);
+  const nextHighestUrgent = sortedTodosByUrgent.reduce(
+    (returningTodo, currentTodo) => (currentTodo.urgent > urgent ? currentTodo : returningTodo),
+    null,
+  );
 
-  const nextHighestUrgentIndex = nextHighestUrgent && sortedTodosByUrgent.findIndex(todo => todo.name === nextHighestUrgent.name)
-  const nextLowestUrgent = typeof nextHighestUrgentIndex === 'number' ? sortedTodosByUrgent[nextHighestUrgentIndex + 1] : sortedTodosByUrgent[0];
+  const nextHighestUrgentIndex =
+    nextHighestUrgent &&
+    sortedTodosByUrgent.findIndex(todo => todo.name === nextHighestUrgent.name);
+  const nextLowestUrgent =
+    typeof nextHighestUrgentIndex === 'number'
+      ? sortedTodosByUrgent[nextHighestUrgentIndex + 1]
+      : sortedTodosByUrgent[0];
 
   let importantHelperText;
   if (nextHighestImportant && nextLowestImportant) importantHelperText = '<- between these two ->';
@@ -162,25 +185,18 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
 
   return (
     <FullScreenContainer scale={important}>
-      <div>
-        Task name:
-      </div>
+      <div>Task name:</div>
       <div>
         <TodoNameInput ref={nameInput} value={name} onChange={e => setName(e.target.value)} />
       </div>
       <DatePickerWrapper>
         <div>
-        <input type='checkbox' checked={useDate} onChange={() => setUseDate(!useDate)} />
-        Due date:
-        <DatePicker 
-          selected={date}
-          onChange={val => setUseDate(true) || setDate(val)}
-        />
+          <input type='checkbox' checked={useDate} onChange={() => setUseDate(!useDate)} />
+          Due date:
+          <DatePicker selected={date} onChange={val => setUseDate(true) || setDate(val)} />
         </div>
       </DatePickerWrapper>
-      <div>
-        Task description:
-      </div>
+      <div>Task description:</div>
       <div>
         <TodoDescTextArea value={desc} onChange={e => setDesc(e.target.value)} />
       </div>
@@ -207,10 +223,10 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
           <BigButton
             color={shouldCheckForDelete ? 'red' : null}
             onClick={() => {
-              if(shouldCheckForDelete) {
-                deleteTodo()
+              if (shouldCheckForDelete) {
+                deleteTodo();
               } else {
-                dispatchDelete({ type: 'CLICK' })
+                dispatchDelete({ type: 'CLICK' });
               }
             }}
           >
@@ -224,7 +240,7 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
         )}
       </BottomOfScreenFlexBetween>
     </FullScreenContainer>
-  )
-}
+  );
+};
 
 export default AddTodo;

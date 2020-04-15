@@ -21,7 +21,8 @@
     "build": "react-scripts build && npx cap copy",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "android": "npx cap open android"
+    "android": "npx cap open android",
+    "format": "prettier --write \"**/*.+(js)\""
   },
   "eslintConfig": {
     "extends": "react-app"
