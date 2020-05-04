@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useReducer, useRef } from 'react';
 
 import { FullScreenContainer, BigButton } from './App';
+import Carousel, { CarouselItem, CarouselTitle } from './Carousel';
 import { perc2color } from './helpers';
 
 import styled from 'styled-components';
@@ -51,7 +52,7 @@ const HighLow = () => (
   </FlexSpaceBetween>
 );
 
-const BottomOfScreenFlexBetween = styled(FlexSpaceBetween)`
+export const BottomOfScreenFlexBetween = styled(FlexSpaceBetween)`
   position: fixed;
   bottom: 10px;
   top: auto;
@@ -132,7 +133,9 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
 
   const nameInput = useRef(null);
 
-  const todo = {
+  const existingParams = editingTodo ? editingTodo : {};
+  const todoToSave = {
+    ...existingParams,
     name,
     desc,
     urgent,
@@ -140,48 +143,31 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
     date: useDate ? date : undefined,
   };
 
+  const [initialOpen, setInitialOpen] = useState(true);
   useEffect(() => {
-    if (!editingTodo) nameInput.current.focus();
-  }, []);
+    if (!editingTodo && initialOpen) {
+      nameInput.current.focus();
+      setInitialOpen(false);
+    }
+  }, [editingTodo, initialOpen]);
 
-  const sortedTodosByImportant = todos.sort((a, b) => b.important - a.important);
-  const nextHighestImportant = sortedTodosByImportant.reduce(
+  // trim out editingTodo so it doesn't show up in "less/more important todos"
+  let todosWithoutThisOne = todos.slice();
+
+  const thisTodoIndex = editingTodo ? todos.findIndex(todo => editingTodo.name === todo.name) : null;
+  if (thisTodoIndex) todosWithoutThisOne.splice(thisTodoIndex, 1);
+
+  const nextHighestImportant = todosWithoutThisOne.reduce(
     (returningTodo, currentTodo) =>
       currentTodo.important > important ? currentTodo : returningTodo,
     null,
   );
 
-  const nextHighestImportantIndex =
-    nextHighestImportant &&
-    sortedTodosByImportant.findIndex(todo => todo.name === nextHighestImportant.name);
-  const nextLowestImportant =
-    typeof nextHighestImportantIndex === 'number'
-      ? sortedTodosByImportant[nextHighestImportantIndex + 1]
-      : sortedTodosByImportant[0];
+  const sortedTodosByUrgent = todosWithoutThisOne.slice().sort((a, b) => b.urgent - a.urgent);
 
-  const sortedTodosByUrgent = todos.sort((a, b) => b.urgent - a.urgent);
-  const nextHighestUrgent = sortedTodosByUrgent.reduce(
-    (returningTodo, currentTodo) => (currentTodo.urgent > urgent ? currentTodo : returningTodo),
-    null,
-  );
-
-  const nextHighestUrgentIndex =
-    nextHighestUrgent &&
-    sortedTodosByUrgent.findIndex(todo => todo.name === nextHighestUrgent.name);
-  const nextLowestUrgent =
-    typeof nextHighestUrgentIndex === 'number'
-      ? sortedTodosByUrgent[nextHighestUrgentIndex + 1]
-      : sortedTodosByUrgent[0];
-
-  let importantHelperText;
-  if (nextHighestImportant && nextLowestImportant) importantHelperText = '<- between these two ->';
-  else if (nextHighestImportant) importantHelperText = 'not as important as';
-  else if (nextLowestImportant) importantHelperText = 'is next next lowest in importance';
-
-  let urgentHelperText;
-  if (nextHighestUrgent && nextLowestUrgent) urgentHelperText = '<- between these two ->';
-  else if (nextHighestUrgent) urgentHelperText = 'not as urgent as';
-  else if (nextLowestUrgent) urgentHelperText = 'is next next lowest in urgency';
+  const [overlay, setOverlay] = useState(false);
+  const importantIndex = overlay && todosWithoutThisOne.reduce((acc, todo) => todo.important > important ? acc + 1 : acc, 0) - 1;
+  const urgentIndex = overlay && sortedTodosByUrgent.reduce((acc, todo) => todo.urgent > urgent ? acc + 1 : acc, 0) - 1;
 
   return (
     <FullScreenContainer scale={important}>
@@ -201,21 +187,11 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
         <TodoDescTextArea value={desc} onChange={e => setDesc(e.target.value)} />
       </div>
       How important is this task?
-      <Slider min={0} max={100} step={1} value={important} onChange={setImportant} />
+      <Slider min={0} max={100} step={1} value={important} onChange={setImportant} onTouchStart={() => setOverlay('important')} onTouchEnd={() => setOverlay(false)} />
       <HighLow />
-      <FlexSpaceBetween>
-        <CompareTodo>{nextLowestImportant && nextLowestImportant.name}</CompareTodo>
-        <SmallHelperText>{importantHelperText}</SmallHelperText>
-        <CompareTodo>{nextHighestImportant && nextHighestImportant.name}</CompareTodo>
-      </FlexSpaceBetween>
       How urgent is this task?
-      <Slider min={0} max={100} step={1} value={urgent} onChange={setUrgent} />
+      <Slider min={0} max={100} step={1} value={urgent} onChange={setUrgent} onTouchStart={() => setOverlay('urgent')} onTouchEnd={() => setOverlay(false)}  />
       <HighLow />
-      <FlexSpaceBetween>
-        <CompareTodo>{nextLowestUrgent && nextLowestUrgent.name}</CompareTodo>
-        <SmallHelperText>{urgentHelperText}</SmallHelperText>
-        <CompareTodo>{nextHighestUrgent && nextHighestUrgent.name}</CompareTodo>
-      </FlexSpaceBetween>
       <ButtonSpacer />
       <BottomOfScreenFlexBetween>
         <BigButton onClick={goBack}>Back</BigButton>
@@ -234,11 +210,43 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
           </BigButton>
         )}
         {editingTodo ? (
-          <BigButton onClick={() => updateTodo(todo)}>Update</BigButton>
+          <BigButton onClick={() => updateTodo(todoToSave)}>Update</BigButton>
         ) : (
-          <BigButton onClick={() => addTodo(todo)}>Add todo</BigButton>
+          <BigButton onClick={() => addTodo(todoToSave)}>Add todo</BigButton>
         )}
       </BottomOfScreenFlexBetween>
+      <Carousel hide={overlay !== 'important'}>
+        <CarouselTitle>Relative Importance:</CarouselTitle>
+        {todosWithoutThisOne.map((todo, i) => (
+          <CarouselItem
+            scale={i - importantIndex} 
+            key={todo.name}
+          >
+            {todo.name}
+          </CarouselItem>
+        ))}
+        <CarouselItem
+          primary
+        >
+          {name || '(New Task)'}
+        </CarouselItem>
+      </Carousel>
+      <Carousel hide={overlay !== 'urgent'}>
+        <CarouselTitle>Relative Urgency:</CarouselTitle>
+        {sortedTodosByUrgent.map((todo, i) => (
+          <CarouselItem
+            scale={i - urgentIndex} 
+            key={todo.name}
+          >
+            {todo.name}
+          </CarouselItem>
+        ))}
+        <CarouselItem
+          primary
+        >
+          {name || '(New Task)'}
+        </CarouselItem>
+      </Carousel>
     </FullScreenContainer>
   );
 };

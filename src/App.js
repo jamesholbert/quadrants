@@ -3,10 +3,13 @@ import './App.css';
 
 import AddTodo from './AddTodo';
 import Calender from './Calendar';
-import { perc2color, getSecondsFromDate } from './helpers';
+import { perc2color, getFrequencyFromDate, getDaysFromDate, sleepy, notSleepy } from './helpers';
+import { Plugins } from '@capacitor/core';
 
 import styled, { keyframes } from 'styled-components';
 import { Slider } from '@reach/slider';
+
+const { App: AppState, SplashScreen } = Plugins;
 
 const pulse = keyframes`
   0% { text-shadow: none } 
@@ -70,9 +73,9 @@ const FlexSpaceAround = styled.div`
 `;
 
 const TitleBody = styled.div`
-  font-size: 1rem;
+  font-size: ${p => p.big ? '2rem' : '1rem'};
   border-bottom: 2px solid;
-  margin-bottom: 5px;
+  margin-bottom: ${p => p.big ? '2rem' : '5px'};
 `;
 
 const TodoBody = styled.button`
@@ -80,7 +83,7 @@ const TodoBody = styled.button`
   border: none;
   background-color: transparent;
   margin-bottom: 5px;
-  color: inherit;
+  color: ${p => p.sleepy ? 'grey' : 'inherit'};
 `;
 
 const AddTodoButton = styled.button`
@@ -104,21 +107,69 @@ const SettingsButton = styled(AddTodoButton)`
   padding-bottom: 30px;
 `;
 
+export const FullScreenContainer = styled.div`
+  height: 100vh;
+  width: 100vw;
+  background-color: ${p => perc2color(100 - p.scale)};
+  padding: 1rem;
+  box-sizing: border-box;
+
+  div[data-reach-slider] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+`;
+
+export const BigButton = styled.button`
+  border-radius: 8px;
+  border: solid 2px black;
+  background-color: ${p => p.color || 'black'};
+  color: white;
+  font-size: 1.5rem;
+  height: 3rem;
+  line-height: 0rem;
+  padding: 1.4rem;
+  width: ${p => p.fullWidth ? '90%' : 'auto'};
+  margin-bottom: ${p => p.fullWidth ? '1rem' : '0'}; 
+`;
+
+const WideButton = ({ children, ...rest }) => (
+  <FlexSpaceAround>
+    <BigButton fullWidth {...rest}>{children}</BigButton>
+  </FlexSpaceAround>
+)
+
+const Title = ({ children, ...rest }) => (
+  <FlexSpaceAround>
+    <TitleBody {...rest}>{children}</TitleBody>
+  </FlexSpaceAround>
+);
+const Todo = ({ children, onClick, sleepy }) => (
+  <FlexSpaceAround>
+    <TodoBody sleepy={sleepy} onClick={onClick}>{children}</TodoBody>
+  </FlexSpaceAround>
+);
+
 const ADDING_TODO = 'adding todo';
 const EDITING_TODO = 'editing todo';
 const IDLE = 'idle';
-const SETTINGS_PAGE = 'SETTINGS_PAGE';
+const SETTINGS_PAGE = 'settings page';
+const CONTEXT_MENU = 'context menu';
 
 const PUSH = 'PUSH';
 const REMOVE = 'REMOVE';
 const SLICE = 'SLICE';
 const CLICK_ADD_BUTTON = 'CLICK_ADD_BUTTON';
+const CONTEXT_CLICK = 'CONTEXT_CLICK';
 const GO_TO_IDLE = 'GO_TO_IDLE';
+const BACK_BUTTON = 'BACK_BUTTON';
 const EDIT_TODO = 'EDIT_TODO';
 const UPDATE_TODO = 'UPDATE_TODO';
 const COMPLETE_TODO = 'COMPLETE_TODO';
 const DELETE_TODO = 'DELETE_TODO';
 const GO_TO_SETTINGS = 'GO_TO_SETTINGS';
+const SLEEP_CURRENT_TODO = 'SLEEP_CURRENT_TODO';
+const CANCEL_SLEEP = undefined;
 
 const todoReducer = (state = {}, { type, value, index, startIndex = 0, endIndex }) => {
   let todos;
@@ -132,6 +183,13 @@ const todoReducer = (state = {}, { type, value, index, startIndex = 0, endIndex 
     case CLICK_ADD_BUTTON:
       return { ...state, appState: ADDING_TODO };
     case GO_TO_IDLE:
+      return { todos: state.todos, appState: IDLE };
+    case BACK_BUTTON:
+      if (state.appState === IDLE) {
+        AppState.exitApp();
+        return state;
+      }
+
       return { todos: state.todos, appState: IDLE };
     case EDIT_TODO:
       return { ...state, appState: EDITING_TODO, editingTodo: state.todos[index] };
@@ -170,48 +228,23 @@ const todoReducer = (state = {}, { type, value, index, startIndex = 0, endIndex 
       };
     case GO_TO_SETTINGS:
       return { ...state, appState: SETTINGS_PAGE };
+    case CONTEXT_CLICK:
+      const focusTodo = state.todos.find(todo => todo.name === value)
+
+      if (focusTodo) {
+        return { ...state, appState: CONTEXT_MENU, focusTodo };
+      } else {
+        return state;
+      }
+    case SLEEP_CURRENT_TODO:
+      return { appState: IDLE, todos: state.todos.map(todo => ({...todo, sleepUntil: state.focusTodo.name === todo.name ? value : todo.sleepUntil }))}
     default:
       return state;
   }
 };
 
-export const FullScreenContainer = styled.div`
-  height: 100vh;
-  width: 100vw;
-  background-color: ${p => perc2color(100 - p.scale)};
-  padding: 1rem;
-  box-sizing: border-box;
-
-  div[data-reach-slider] {
-    width: 100%;
-    box-sizing: border-box;
-  }
-`;
-
-export const BigButton = styled.button`
-  border-radius: 8px;
-  border: solid 2px black;
-  background-color: ${p => p.color || 'black'};
-  color: white;
-  font-size: 1rem;
-  height: 3rem;
-  line-height: 0rem;
-  padding: 2rem;
-`;
-
-const Title = ({ children }) => (
-  <FlexSpaceAround>
-    <TitleBody>{children}</TitleBody>
-  </FlexSpaceAround>
-);
-const Todo = ({ children, onClick }) => (
-  <FlexSpaceAround>
-    <TodoBody onClick={onClick}>{children}</TodoBody>
-  </FlexSpaceAround>
-);
-
 const App = () => {
-  const [{ appState, todos, editingTodo }, dispatch] = useReducer(todoReducer, {
+  const [{ appState, todos, editingTodo, focusTodo }, dispatch] = useReducer(todoReducer, {
     appState: IDLE,
     todos: localStorage.getItem('todos') ? JSON.parse(localStorage.getItem('todos')) : [],
   });
@@ -255,6 +288,25 @@ const App = () => {
     document.body.style.backgroundColor = appState === SETTINGS_PAGE ? 'cyan' : 'yellow';
   }, [appState]);
 
+  useEffect(() => {
+    SplashScreen.hide();
+    AppState.addListener('backButton', () => {
+      dispatch({ type: BACK_BUTTON })
+    });
+
+    // comment this section out to stop context menu
+    document.addEventListener('contextmenu', function(event){
+      event.preventDefault();
+      dispatch({ type: CONTEXT_CLICK, value: event.target.innerHTML })
+    })
+    // end context menu section
+
+    return () => {
+      App.removeAllListeners();
+      document.removeAllListeners();
+    }
+  }, [])
+
   // const clearTodos = () => dispatch({ type: SLICE, startIndex: 0, endIndex: 0 })
   const goBack = () => dispatch({ type: GO_TO_IDLE });
 
@@ -274,6 +326,29 @@ const App = () => {
         <p>(Tasks above this mark will be deemed urgent)</p>
         <Slider min={0} max={100} step={1} value={urgentThreshold} onChange={setUrgentThreshold} />
         <BigButton onClick={() => dispatch({ type: GO_TO_IDLE })}>Go Back</BigButton>
+      </FullScreenContainer>
+    );
+  }
+
+  if (appState === CONTEXT_MENU) {
+    const date = new Date()
+
+    const assignDate = days => {
+      date.setDate(date.getDate() + days)
+      return date
+    }
+
+    return (
+      <FullScreenContainer>
+        <Title big>{focusTodo.name}</Title>
+        {focusTodo.sleepUntil && getDaysFromDate(focusTodo.sleepUntil) > 0 && (
+          <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: CANCEL_SLEEP })}>Wake up todo</WideButton>
+        )}
+        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(1) })}>Sleep for today</WideButton>
+        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(3) })}>Sleep for 3 days</WideButton>
+        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(5) })}>Sleep for 5 days</WideButton>
+        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(7) })}>Sleep for 7 days</WideButton>
+        <WideButton onClick={() => dispatch({ type: GO_TO_IDLE })}>Go Back</WideButton>
       </FullScreenContainer>
     );
   }
@@ -301,7 +376,7 @@ const App = () => {
       <AddTodo
         addTodo={addTodo}
         goBack={goBack}
-        todos={todos}
+        todos={sortedTodosByImportant}
         editingTodo={editingTodo}
         updateTodo={updateTodo}
         deleteTodo={deleteTodo}
@@ -324,7 +399,7 @@ const App = () => {
                 })
               }
             >
-              <PulseContents seconds={() => getSecondsFromDate(todo.date)}>
+              <PulseContents seconds={() => getFrequencyFromDate(todo.date)}>
                 {todo.name}
               </PulseContents>
               {todo.date && <Calender white />}
@@ -345,7 +420,7 @@ const App = () => {
                 })
               }
             >
-              <PulseContents seconds={() => getSecondsFromDate(todo.date)}>
+              <PulseContents seconds={() => getFrequencyFromDate(todo.date)}>
                 {todo.name}
               </PulseContents>
               {todo.date && <Calender />}
@@ -366,7 +441,7 @@ const App = () => {
                 })
               }
             >
-              <PulseContents seconds={() => getSecondsFromDate(todo.date)}>
+              <PulseContents seconds={() => getFrequencyFromDate(todo.date)}>
                 {todo.name}
               </PulseContents>
               {todo.date && <Calender />}
@@ -377,7 +452,7 @@ const App = () => {
       <NonUrgentUnimportant>
         <Title>Non-Urgent Un-Important</Title>
         <TodoScrollBox>
-          {nonurgentUnimportantTodos.map((todo, i) => (
+          {nonurgentUnimportantTodos.filter(notSleepy).map((todo, i) => (
             <Todo
               key={i}
               onClick={() =>
@@ -387,7 +462,24 @@ const App = () => {
                 })
               }
             >
-              <PulseContents seconds={() => getSecondsFromDate(todo.date)}>
+              <PulseContents seconds={() => getFrequencyFromDate(todo.date)}>
+                {todo.name}
+              </PulseContents>
+              {todo.date && <Calender white />}
+            </Todo>
+          ))}
+          {nonurgentUnimportantTodos.filter(sleepy).map((todo, i) => (
+            <Todo
+              sleepy
+              key={i}
+              onClick={() =>
+                dispatch({
+                  type: EDIT_TODO,
+                  index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name),
+                })
+              }
+            >
+              <PulseContents seconds={() => getFrequencyFromDate(todo.date)}>
                 {todo.name}
               </PulseContents>
               {todo.date && <Calender white />}
