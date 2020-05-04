@@ -154,7 +154,9 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
   // trim out editingTodo so it doesn't show up in "less/more important todos"
   let todosWithoutThisOne = todos.slice();
 
-  const thisTodoIndex = editingTodo ? todos.findIndex(todo => editingTodo.name === todo.name) : null;
+  const thisTodoIndex = editingTodo
+    ? todos.findIndex(todo => editingTodo.name === todo.name)
+    : null;
   if (thisTodoIndex) todosWithoutThisOne.splice(thisTodoIndex, 1);
 
   const nextHighestImportant = todosWithoutThisOne.reduce(
@@ -166,8 +168,12 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
   const sortedTodosByUrgent = todosWithoutThisOne.slice().sort((a, b) => b.urgent - a.urgent);
 
   const [overlay, setOverlay] = useState(false);
-  const importantIndex = overlay && todosWithoutThisOne.reduce((acc, todo) => todo.important > important ? acc + 1 : acc, 0) - 1;
-  const urgentIndex = overlay && sortedTodosByUrgent.reduce((acc, todo) => todo.urgent > urgent ? acc + 1 : acc, 0) - 1;
+  const importantIndex =
+    overlay &&
+    todosWithoutThisOne.reduce((acc, todo) => (todo.important > important ? acc + 1 : acc), 0) - 1;
+  const urgentIndex =
+    overlay &&
+    sortedTodosByUrgent.reduce((acc, todo) => (todo.urgent > urgent ? acc + 1 : acc), 0) - 1;
 
   return (
     <FullScreenContainer scale={important}>
@@ -187,10 +193,26 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
         <TodoDescTextArea value={desc} onChange={e => setDesc(e.target.value)} />
       </div>
       How important is this task?
-      <Slider min={0} max={100} step={1} value={important} onChange={setImportant} onTouchStart={() => setOverlay('important')} onTouchEnd={() => setOverlay(false)} />
+      <Slider
+        min={0}
+        max={100}
+        step={1}
+        value={important}
+        onChange={setImportant}
+        onTouchStart={() => setOverlay('important')}
+        onTouchEnd={() => setOverlay(false)}
+      />
       <HighLow />
       How urgent is this task?
-      <Slider min={0} max={100} step={1} value={urgent} onChange={setUrgent} onTouchStart={() => setOverlay('urgent')} onTouchEnd={() => setOverlay(false)}  />
+      <Slider
+        min={0}
+        max={100}
+        step={1}
+        value={urgent}
+        onChange={setUrgent}
+        onTouchStart={() => setOverlay('urgent')}
+        onTouchEnd={() => setOverlay(false)}
+      />
       <HighLow />
       <ButtonSpacer />
       <BottomOfScreenFlexBetween>
@@ -218,34 +240,20 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
       <Carousel hide={overlay !== 'important'}>
         <CarouselTitle>Relative Importance:</CarouselTitle>
         {todosWithoutThisOne.map((todo, i) => (
-          <CarouselItem
-            scale={i - importantIndex} 
-            key={todo.name}
-          >
+          <CarouselItem scale={i - importantIndex} key={todo.name}>
             {todo.name}
           </CarouselItem>
         ))}
-        <CarouselItem
-          primary
-        >
-          {name || '(New Task)'}
-        </CarouselItem>
+        <CarouselItem primary>{name || '(New Task)'}</CarouselItem>
       </Carousel>
       <Carousel hide={overlay !== 'urgent'}>
         <CarouselTitle>Relative Urgency:</CarouselTitle>
         {sortedTodosByUrgent.map((todo, i) => (
-          <CarouselItem
-            scale={i - urgentIndex} 
-            key={todo.name}
-          >
+          <CarouselItem scale={i - urgentIndex} key={todo.name}>
             {todo.name}
           </CarouselItem>
         ))}
-        <CarouselItem
-          primary
-        >
-          {name || '(New Task)'}
-        </CarouselItem>
+        <CarouselItem primary>{name || '(New Task)'}</CarouselItem>
       </Carousel>
     </FullScreenContainer>
   );

@@ -73,9 +73,9 @@ const FlexSpaceAround = styled.div`
 `;
 
 const TitleBody = styled.div`
-  font-size: ${p => p.big ? '2rem' : '1rem'};
+  font-size: ${p => (p.big ? '2rem' : '1rem')};
   border-bottom: 2px solid;
-  margin-bottom: ${p => p.big ? '2rem' : '5px'};
+  margin-bottom: ${p => (p.big ? '2rem' : '5px')};
 `;
 
 const TodoBody = styled.button`
@@ -83,7 +83,7 @@ const TodoBody = styled.button`
   border: none;
   background-color: transparent;
   margin-bottom: 5px;
-  color: ${p => p.sleepy ? 'grey' : 'inherit'};
+  color: ${p => (p.sleepy ? 'grey' : 'inherit')};
 `;
 
 const AddTodoButton = styled.button`
@@ -129,15 +129,17 @@ export const BigButton = styled.button`
   height: 3rem;
   line-height: 0rem;
   padding: 1.4rem;
-  width: ${p => p.fullWidth ? '90%' : 'auto'};
-  margin-bottom: ${p => p.fullWidth ? '1rem' : '0'}; 
+  width: ${p => (p.fullWidth ? '90%' : 'auto')};
+  margin-bottom: ${p => (p.fullWidth ? '1rem' : '0')};
 `;
 
 const WideButton = ({ children, ...rest }) => (
   <FlexSpaceAround>
-    <BigButton fullWidth {...rest}>{children}</BigButton>
+    <BigButton fullWidth {...rest}>
+      {children}
+    </BigButton>
   </FlexSpaceAround>
-)
+);
 
 const Title = ({ children, ...rest }) => (
   <FlexSpaceAround>
@@ -146,7 +148,9 @@ const Title = ({ children, ...rest }) => (
 );
 const Todo = ({ children, onClick, sleepy }) => (
   <FlexSpaceAround>
-    <TodoBody sleepy={sleepy} onClick={onClick}>{children}</TodoBody>
+    <TodoBody sleepy={sleepy} onClick={onClick}>
+      {children}
+    </TodoBody>
   </FlexSpaceAround>
 );
 
@@ -229,7 +233,7 @@ const todoReducer = (state = {}, { type, value, index, startIndex = 0, endIndex 
     case GO_TO_SETTINGS:
       return { ...state, appState: SETTINGS_PAGE };
     case CONTEXT_CLICK:
-      const focusTodo = state.todos.find(todo => todo.name === value)
+      const focusTodo = state.todos.find(todo => todo.name === value);
 
       if (focusTodo) {
         return { ...state, appState: CONTEXT_MENU, focusTodo };
@@ -237,7 +241,13 @@ const todoReducer = (state = {}, { type, value, index, startIndex = 0, endIndex 
         return state;
       }
     case SLEEP_CURRENT_TODO:
-      return { appState: IDLE, todos: state.todos.map(todo => ({...todo, sleepUntil: state.focusTodo.name === todo.name ? value : todo.sleepUntil }))}
+      return {
+        appState: IDLE,
+        todos: state.todos.map(todo => ({
+          ...todo,
+          sleepUntil: state.focusTodo.name === todo.name ? value : todo.sleepUntil,
+        })),
+      };
     default:
       return state;
   }
@@ -291,21 +301,21 @@ const App = () => {
   useEffect(() => {
     SplashScreen.hide();
     AppState.addListener('backButton', () => {
-      dispatch({ type: BACK_BUTTON })
+      dispatch({ type: BACK_BUTTON });
     });
 
     // comment this section out to stop context menu
-    document.addEventListener('contextmenu', function(event){
+    document.addEventListener('contextmenu', function(event) {
       event.preventDefault();
-      dispatch({ type: CONTEXT_CLICK, value: event.target.innerHTML })
-    })
+      dispatch({ type: CONTEXT_CLICK, value: event.target.innerHTML });
+    });
     // end context menu section
 
     return () => {
       App.removeAllListeners();
       document.removeAllListeners();
-    }
-  }, [])
+    };
+  }, []);
 
   // const clearTodos = () => dispatch({ type: SLICE, startIndex: 0, endIndex: 0 })
   const goBack = () => dispatch({ type: GO_TO_IDLE });
@@ -331,23 +341,33 @@ const App = () => {
   }
 
   if (appState === CONTEXT_MENU) {
-    const date = new Date()
+    const date = new Date();
 
     const assignDate = days => {
-      date.setDate(date.getDate() + days)
-      return date
-    }
+      date.setDate(date.getDate() + days);
+      return date;
+    };
 
     return (
       <FullScreenContainer>
         <Title big>{focusTodo.name}</Title>
         {focusTodo.sleepUntil && getDaysFromDate(focusTodo.sleepUntil) > 0 && (
-          <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: CANCEL_SLEEP })}>Wake up todo</WideButton>
+          <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: CANCEL_SLEEP })}>
+            Wake up todo
+          </WideButton>
         )}
-        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(1) })}>Sleep for today</WideButton>
-        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(3) })}>Sleep for 3 days</WideButton>
-        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(5) })}>Sleep for 5 days</WideButton>
-        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(7) })}>Sleep for 7 days</WideButton>
+        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(1) })}>
+          Sleep for today
+        </WideButton>
+        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(3) })}>
+          Sleep for 3 days
+        </WideButton>
+        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(5) })}>
+          Sleep for 5 days
+        </WideButton>
+        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(7) })}>
+          Sleep for 7 days
+        </WideButton>
         <WideButton onClick={() => dispatch({ type: GO_TO_IDLE })}>Go Back</WideButton>
       </FullScreenContainer>
     );

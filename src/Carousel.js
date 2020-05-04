@@ -7,11 +7,11 @@ const Carousel = styled.div`
   height: 100vh;
   width: 100vw;
   top: 0;
-  left: ${p => p.hide ? '100%' : 0};
-  opacity: ${p => p.hide ? 0 : 1};
+  left: ${p => (p.hide ? '100%' : 0)};
+  opacity: ${p => (p.hide ? 0 : 1)};
   z-index: 10;
-  transition: all ease-in .25s;
-`
+  transition: all ease-in 0.25s;
+`;
 
 export default Carousel;
 
@@ -29,37 +29,38 @@ const BELL_POSITION = {
   '2': 15,
   '3': 20,
   '4': 25,
-  '5': 30
-}
+  '5': 30,
+};
 
 const BELL_OPACITY = {
   carouselTitle: 1,
   hiddenAbove: 0,
   hiddenBelow: 0,
-  '-5': .1,
-  '-4': .2,
-  '-3': .4,
-  '-2': .6,
+  '-5': 0.1,
+  '-4': 0.2,
+  '-3': 0.4,
+  '-2': 0.6,
   '-1': 1,
   '0': 1,
   '1': 1,
-  '2': .6,
-  '3': .4,
-  '4': .2,
-  '5': .1
-}
+  '2': 0.6,
+  '3': 0.4,
+  '4': 0.2,
+  '5': 0.1,
+};
 
 const CarouselItemWrapper = styled.div`
   width: 100%;
   position: absolute;
-  top: ${p => (45 + p.position) + '%'};
+  top: ${p => 45 + p.position + '%'};
   opacity: ${p => Math.sqrt(p.visibility)};
-  transform: scale(${p => Math.sqrt(Math.sqrt(p.visibility))}) rotate(${p => p.carouselTitle ? 0 : 360 - p.position}deg);
-  margin-left: ${p => p.carouselTitle ? 0 : (Math.abs(p.position) / 6) - 2}rem;
+  transform: scale(${p => Math.sqrt(Math.sqrt(p.visibility))})
+    rotate(${p => (p.carouselTitle ? 0 : 360 - p.position)}deg);
+  margin-left: ${p => (p.carouselTitle ? 0 : Math.abs(p.position) / 6 - 2)}rem;
   display: flex;
   justify-content: center;
-  transition: all .2s ease-out;
-`
+  transition: all 0.2s ease-out;
+`;
 
 const CarouselItemContent = styled.div`
   color: white;
@@ -69,24 +70,24 @@ const CarouselItemContent = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`
+`;
 
 export const CarouselItem = ({ children, scale, primary, carouselTitle }) => (
-  <CarouselItemWrapper 
-    position={BELL_POSITION[primary ? 0 : carouselTitle ? 'carouselTitle' : getCarouselIndex(scale)]} 
-    visibility={BELL_OPACITY[primary ? 0 : carouselTitle ? 'carouselTitle' : getCarouselIndex(scale)]}
+  <CarouselItemWrapper
+    position={
+      BELL_POSITION[primary ? 0 : carouselTitle ? 'carouselTitle' : getCarouselIndex(scale)]
+    }
+    visibility={
+      BELL_OPACITY[primary ? 0 : carouselTitle ? 'carouselTitle' : getCarouselIndex(scale)]
+    }
     carouselTitle={carouselTitle ? true : false}
   >
-    <CarouselItemContent>
-      {children}
-    </CarouselItemContent>
+    <CarouselItemContent>{children}</CarouselItemContent>
   </CarouselItemWrapper>
 );
 
 export const CarouselTitle = ({ children }) => (
-  <CarouselItem carouselTitle>
-    {children}
-  </CarouselItem>
+  <CarouselItem carouselTitle>{children}</CarouselItem>
 );
 
 const getCarouselIndex = scale => {
@@ -94,4 +95,4 @@ const getCarouselIndex = scale => {
   if (scale > 5) return 'hiddenBelow';
   if (scale < 1) return (scale - 1).toString();
   return scale.toString();
-}
+};

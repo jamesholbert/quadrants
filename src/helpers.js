@@ -37,27 +37,27 @@ export const getDaysFromDate = date => {
   return Difference_In_Days;
 };
 
-
 export const sleepy = todo => {
   if (todo.sleepUntil && getDaysFromDate(todo.sleepUntil) > 0) {
     return isToday(todo.sleepUntil) ? false : true;
   }
 
   return false;
-}
+};
 
 export const notSleepy = todo => {
   if (!todo.sleepUntil || getDaysFromDate(todo.sleepUntil) < 0) return true;
 
   // if less than one, verify the days arne't the same
   return isToday(todo.sleepUntil) ? true : false;
-}
+};
 
-const isToday = date => getFavorableDateString(new Date(date)) === getFavorableDateString(new Date());
+const isToday = date =>
+  getFavorableDateString(new Date(date)) === getFavorableDateString(new Date());
 
 const getFavorableDateString = date => {
   const day = date.getDate();
   const month = date.getMonth() + 1; // Since getMonth() returns month from 0-11 not 1-12
   const year = date.getFullYear();
-  return day + "/" + month + "/" + year;  
-}
+  return day + '/' + month + '/' + year;
+};
