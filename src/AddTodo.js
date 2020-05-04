@@ -60,10 +60,6 @@ export const BottomOfScreenFlexBetween = styled(FlexSpaceBetween)`
   width: 92%;
 `;
 
-const CompareTodo = styled.span`
-  font-size: 1.5rem;
-`;
-
 const ButtonSpacer = styled.div`
   height: 5rem;
 `;
@@ -158,12 +154,6 @@ const AddTodo = ({ addTodo, goBack, todos, editingTodo, updateTodo, deleteTodo }
     ? todos.findIndex(todo => editingTodo.name === todo.name)
     : null;
   if (thisTodoIndex) todosWithoutThisOne.splice(thisTodoIndex, 1);
-
-  const nextHighestImportant = todosWithoutThisOne.reduce(
-    (returningTodo, currentTodo) =>
-      currentTodo.important > important ? currentTodo : returningTodo,
-    null,
-  );
 
   const sortedTodosByUrgent = todosWithoutThisOne.slice().sort((a, b) => b.urgent - a.urgent);
 

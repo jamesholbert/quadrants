@@ -146,6 +146,7 @@ const Title = ({ children, ...rest }) => (
     <TitleBody {...rest}>{children}</TitleBody>
   </FlexSpaceAround>
 );
+
 const Todo = ({ children, onClick, sleepy }) => (
   <FlexSpaceAround>
     <TodoBody sleepy={sleepy} onClick={onClick}>
@@ -153,6 +154,8 @@ const Todo = ({ children, onClick, sleepy }) => (
     </TodoBody>
   </FlexSpaceAround>
 );
+
+const ContextTarget = styled.span``;
 
 const ADDING_TODO = 'adding todo';
 const EDITING_TODO = 'editing todo';
@@ -348,6 +351,8 @@ const App = () => {
       return date;
     };
 
+    const handleSleep = val => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(val) });
+
     return (
       <FullScreenContainer>
         <Title big>{focusTodo.name}</Title>
@@ -356,18 +361,10 @@ const App = () => {
             Wake up todo
           </WideButton>
         )}
-        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(1) })}>
-          Sleep for today
-        </WideButton>
-        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(3) })}>
-          Sleep for 3 days
-        </WideButton>
-        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(5) })}>
-          Sleep for 5 days
-        </WideButton>
-        <WideButton onClick={() => dispatch({ type: SLEEP_CURRENT_TODO, value: assignDate(7) })}>
-          Sleep for 7 days
-        </WideButton>
+        <WideButton onClick={() => handleSleep(1)}>Sleep for today</WideButton>
+        <WideButton onClick={() => handleSleep(3)}>Sleep for 3 days</WideButton>
+        <WideButton onClick={() => handleSleep(5)}>Sleep for 5 days</WideButton>
+        <WideButton onClick={() => handleSleep(7)}>Sleep for 7 days</WideButton>
         <WideButton onClick={() => dispatch({ type: GO_TO_IDLE })}>Go Back</WideButton>
       </FullScreenContainer>
     );
@@ -409,7 +406,7 @@ const App = () => {
       <UrgentImportant>
         <Title>Urgent Important</Title>
         <TodoScrollBox>
-          {urgentImportantTodos.map((todo, i) => (
+          {urgentImportantTodos.filter(notSleepy).map((todo, i) => (
             <Todo
               key={i}
               onClick={() =>
@@ -425,12 +422,27 @@ const App = () => {
               {todo.date && <Calender white />}
             </Todo>
           ))}
+          {urgentImportantTodos.filter(sleepy).map((todo, i) => (
+            <Todo
+              sleepy
+              key={i}
+              onClick={() =>
+                dispatch({
+                  type: EDIT_TODO,
+                  index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name),
+                })
+              }
+            >
+              <ContextTarget>{todo.name}</ContextTarget>
+              {todo.date && <Calender white />}
+            </Todo>
+          ))}
         </TodoScrollBox>
       </UrgentImportant>
       <NonUrgentImportant>
         <Title>Non-Urgent Important</Title>
         <TodoScrollBox>
-          {nonurgentImportantTodos.map((todo, i) => (
+          {nonurgentImportantTodos.filter(notSleepy).map((todo, i) => (
             <Todo
               key={i}
               onClick={() =>
@@ -446,12 +458,27 @@ const App = () => {
               {todo.date && <Calender />}
             </Todo>
           ))}
+          {nonurgentImportantTodos.filter(sleepy).map((todo, i) => (
+            <Todo
+              sleepy
+              key={i}
+              onClick={() =>
+                dispatch({
+                  type: EDIT_TODO,
+                  index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name),
+                })
+              }
+            >
+              <ContextTarget>{todo.name}</ContextTarget>
+              {todo.date && <Calender />}
+            </Todo>
+          ))}
         </TodoScrollBox>
       </NonUrgentImportant>
       <UrgentUnimportant>
         <Title>Urgent Un-Important</Title>
         <TodoScrollBox>
-          {urgentUnimportantTodos.map((todo, i) => (
+          {urgentUnimportantTodos.filter(notSleepy).map((todo, i) => (
             <Todo
               key={i}
               onClick={() =>
@@ -464,6 +491,21 @@ const App = () => {
               <PulseContents seconds={() => getFrequencyFromDate(todo.date)}>
                 {todo.name}
               </PulseContents>
+              {todo.date && <Calender />}
+            </Todo>
+          ))}
+          {urgentUnimportantTodos.filter(sleepy).map((todo, i) => (
+            <Todo
+              sleepy
+              key={i}
+              onClick={() =>
+                dispatch({
+                  type: EDIT_TODO,
+                  index: todos.findIndex(mainListTodo => todo.name === mainListTodo.name),
+                })
+              }
+            >
+              <ContextTarget>{todo.name}</ContextTarget>
               {todo.date && <Calender />}
             </Todo>
           ))}
@@ -499,9 +541,7 @@ const App = () => {
                 })
               }
             >
-              <PulseContents seconds={() => getFrequencyFromDate(todo.date)}>
-                {todo.name}
-              </PulseContents>
+              <ContextTarget>{todo.name}</ContextTarget>
               {todo.date && <Calender white />}
             </Todo>
           ))}
